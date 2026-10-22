@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="es" class="dark h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Esc. 4044 Casale | Prof. Ing. Martinez - Titulación Complejométrica de Cu²⁺</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#121e2e',
+                            950: '#070d17',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #070d17;
+            color: #f8fafc;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom Mobile Scrollbars */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 9999px;
+        }
+        
+        /* Smooth liquid color transitions */
+        .liquid-color {
+            transition: fill 0.35s ease, background-color 0.35s ease;
+        }
+
+        /* Erlenmeyer stirrer vibration */
+        @keyframes stir {
+            0% { transform: rotate(0deg) translate(0, 0); }
+            25% { transform: rotate(0.6deg) translate(0.8px, -0.8px); }
+            50% { transform: rotate(-0.6deg) translate(-0.8px, 0.8px); }
+            75% { transform: rotate(0.4deg) translate(-0.8px, -0.8px); }
+            100% { transform: rotate(0deg) translate(0, 0); }
+        }
+        .stirring {
+            animation: stir 0.15s infinite linear;
+        }
+
+        /* Responsive touch targets */
+        .touch-btn {
+            min-height: 48px;
+            touch-action: manipulation;
+        }
+    </style>
+</head>
+<body class="min-h-full flex flex-col justify-between overflow-x-hidden antialiased bg-slate-950 text-slate-100">
+
+    <!-- Header Navigation -->
+    <header class="bg-slate-900/95 border-b border-slate-800/80 sticky top-0 z-50 px-3 sm:px-6 py-2.5 backdrop-blur-md shadow-md">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4">
+            <!-- Brand & Title -->
+            <div class="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-start">
+                <div class="flex items-center gap-2.5">
+                    <div class="p-2 bg-cyan-500/10 border border-cyan-500/30 rounded-xl text-cyan-400 shrink-0">
+                        <i class="fa-solid fa-flask-vial text-lg sm:text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-sm sm:text-lg font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-indigo-400 leading-tight">
+                            Esc. 4044 Casale | Prof. Ing. Martinez
+                        </h1>
+                        <p class="text-[11px] sm:text-xs text-slate-400 font-medium">
+                            Titulación Complejométrica: Cu²⁺ con EDTA
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Mobile Action Icons (Quick Reset & Theory) -->
+                <div class="flex items-center gap-1.5 sm:hidden">
+                    <button id="btn-theory-modal-mobile" class="p-2 bg-slate-800 hover:bg-slate-700 text-cyan-400 rounded-lg border border-slate-700" title="Fundamento Teórico">
+                        <i class="fa-solid fa-book-open"></i>
+                    </button>
+                    <button id="btn-reset-mobile" class="p-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg" title="Nueva Muestra">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Desktop Actions -->
+            <div class="hidden sm:flex items-center gap-2.5">
+                <button id="btn-theory-modal" class="px-3.5 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl border border-slate-700 transition flex items-center gap-2">
+                    <i class="fa-solid fa-book-open text-cyan-400"></i> Fundamento Teórico
+                </button>
+                <button id="btn-sound-toggle" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 transition" title="Activar/Desactivar Sonido">
+                    <i id="sound-icon" class="fa-solid fa-volume-high text-cyan-400"></i>
+                </button>
+                <button id="btn-reset-main" class="px-4 py-2 text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl transition shadow-lg shadow-cyan-950 flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i> Nueva Muestra
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Responsive Grid -->
+    <main class="max-w-7xl mx-auto w-full p-2.5 sm:p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 flex-grow">
+
+        <!-- Left Column: SVG Bench Simulation & Burette Controls (Lg 7 Cols) -->
+        <section class="lg:col-span-7 flex flex-col gap-3 sm:gap-4">
+            
+            <!-- Lab Bench Canvas Container -->
+            <div class="bg-slate-900 border border-slate-800/80 rounded-2xl p-2.5 sm:p-4 relative overflow-hidden flex flex-col items-center justify-between min-h-[380px] sm:min-h-[460px] shadow-2xl">
+                
+                <!-- Background Grid -->
+                <div class="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:1.5rem_1.5rem] sm:bg-[size:2rem_2rem] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_50%,#000_70%,transparent_100%)] opacity-30 pointer-events-none"></div>
+
+                <!-- Table Surface Line -->
+                <div class="absolute bottom-0 inset-x-0 h-10 sm:h-12 bg-slate-950 border-t border-slate-800/80 flex items-center justify-center">
+                    <div class="w-20 sm:w-28 h-1 bg-slate-800 rounded-full"></div>
+                </div>
+
+                <!-- Top Info Badges (Stacked on Mobile) -->
+                <div class="w-full flex justify-between items-start gap-2 z-10 relative">
+                    <!-- Left Badge: Aliquot Info -->
+                    <div class="bg-slate-950/85 backdrop-blur-md border border-slate-800 p-2 sm:p-2.5 rounded-xl shadow-md flex flex-col gap-0.5">
+                        <span id="titration-status-badge" class="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1 w-fit">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                            <span>Listo para Titular</span>
+                        </span>
+                        <span class="text-[10px] sm:text-xs text-slate-400 font-mono mt-0.5">Alícuota CuSO<sub>4</sub>: <b id="display-aliquot" class="text-slate-100 font-bold">25.00 mL</b></span>
+                        <span class="text-[10px] sm:text-xs text-slate-400 font-mono">Concentración EDTA: <b id="display-edta-m" class="text-cyan-400 font-bold">0.0200 M</b></span>
+                    </div>
+
+                    <!-- Right Badge: Burette Zoom -->
+                    <div class="bg-slate-950/85 backdrop-blur-md border border-slate-800 p-2 sm:p-2.5 rounded-xl shadow-md flex flex-col items-end shrink-0">
+                        <span class="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-wider font-bold">Lectura Bureta</span>
+                        <div class="text-xl sm:text-2xl font-black font-mono text-cyan-400 leading-tight" id="display-burette-vol">0.00 <span class="text-xs font-normal text-slate-400">mL</span></div>
+                        <span class="text-[10px] text-slate-400 font-mono mt-0.5">Gastado: <b id="display-added-vol" class="text-slate-100">0.00 mL</b></span>
+                    </div>
+                </div>
+
+                <!-- Responsive Interactive SVG Stand Assembly -->
+                <svg id="lab-svg" viewBox="0 0 400 480" class="w-full max-w-[320px] sm:max-w-[370px] h-auto z-10 select-none my-1">
+                    <defs>
+                        <!-- Glass Gradients -->
+                        <linearGradient id="glassGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="rgba(255,255,255,0.2)" />
+                            <stop offset="20%" stop-color="rgba(255,255,255,0.06)" />
+                            <stop offset="80%" stop-color="rgba(255,255,255,0.02)" />
+                            <stop offset="100%" stop-color="rgba(255,255,255,0.15)" />
+                        </linearGradient>
+
+                        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="3" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                    </defs>
+
+                    <!-- Laboratory Support Stand -->
+                    <rect x="120" y="440" width="160" height="12" rx="3" fill="#334155" stroke="#475569" stroke-width="1.5" />
+                    <rect x="196" y="20" width="8" height="420" fill="#475569" />
+                    <!-- Clamp -->
+                    <path d="M 196 150 L 215 150 L 215 170 L 196 170 Z" fill="#64748b" />
+                    <rect x="210" y="156" width="20" height="8" fill="#334155" />
+
+                    <!-- BURETTE ASSEMBLY -->
+                    <!-- Burette Glass Tube -->
+                    <rect x="220" y="20" width="16" height="260" rx="2" fill="url(#glassGrad)" stroke="#94a3b8" stroke-width="1.2" />
+                    <!-- Burette Liquid Level -->
+                    <rect id="svg-burette-liquid" x="221.5" y="30" width="13" height="240" fill="#38bdf8" opacity="0.6" />
+
+                    <!-- Burette Graduations -->
+                    <g id="burette-ticks" stroke="#cbd5e1" stroke-width="0.8" opacity="0.75">
+                        <line x1="220" y1="30" x2="226" y2="30" /><text x="210" y="33" fill="#cbd5e1" font-size="7" font-family="monospace">0</text>
+                        <line x1="220" y1="78" x2="225" y2="78" />
+                        <line x1="220" y1="126" x2="226" y2="126" /><text x="206" y="129" fill="#cbd5e1" font-size="7" font-family="monospace">20</text>
+                        <line x1="220" y1="174" x2="225" y2="174" />
+                        <line x1="220" y1="222" x2="226" y2="222" /><text x="206" y="225" fill="#cbd5e1" font-size="7" font-family="monospace">40</text>
+                        <line x1="220" y1="270" x2="226" y2="270" /><text x="206" y="273" fill="#cbd5e1" font-size="7" font-family="monospace">50</text>
+                    </g>
+
+                    <!-- Burette Stopcock Valve -->
+                    <g id="svg-stopcock-group" class="cursor-pointer">
+                        <polygon points="225,280 231,280 228,295" fill="#94a3b8" />
+                        <rect id="svg-valve-handle" x="221" y="284" width="14" height="6" rx="2" fill="#ef4444" transform-origin="228 287" />
+                        <path d="M 227 295 L 229 295 L 228.5 310 Z" fill="#94a3b8" />
+                    </g>
+
+                    <!-- Liquid Droplet Animation -->
+                    <circle id="svg-droplet" cx="228.5" cy="312" r="3" fill="#38bdf8" opacity="0" />
+
+                    <!-- ERLENMEYER FLASK ASSEMBLY -->
+                    <g id="svg-flask-group" class="transition-transform duration-100">
+                        <!-- Flask Liquid -->
+                        <path id="svg-flask-liquid" d="M 185 400 L 271 400 L 288 428 C 290 432 286 435 280 435 L 176 435 C 170 435 166 432 168 428 Z" fill="#d97706" filter="url(#glow)" class="liquid-color" />
+
+                        <!-- Magnetic Stirrer Bar -->
+                        <rect id="svg-stir-bar" x="220" y="430" width="16" height="4" rx="2" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.5" />
+
+                        <!-- Flask Glass Outer Body -->
+                        <path d="M 218 330 L 238 330 L 238 350 L 292 428 C 297 436 291 440 280 440 L 176 440 C 165 440 159 436 164 428 L 218 350 Z" fill="url(#glassGrad)" stroke="#cbd5e1" stroke-width="1.5" />
+                        <ellipse cx="228" cy="330" rx="11" ry="3" fill="none" stroke="#cbd5e1" stroke-width="1.5" />
+                        <line x1="200" y1="400" x2="210" y2="400" stroke="#94a3b8" stroke-width="0.8" opacity="0.6" />
+                        <line x1="205" y1="415" x2="213" y2="415" stroke="#94a3b8" stroke-width="0.8" opacity="0.6" />
+                        <text x="215" y="403" fill="#94a3b8" font-size="6" opacity="0.8">100ml</text>
+                    </g>
+                </svg>
+
+                <!-- Color Transition Indicator Bar -->
+                <div class="w-full mt-1 flex items-center justify-between gap-1.5 bg-slate-950/70 px-2.5 py-1.5 rounded-xl border border-slate-800/80 text-[10px] sm:text-xs">
+                    <span class="text-slate-400 font-semibold shrink-0">Indicador Murexida:</span>
+                    <div class="flex items-center gap-1 sm:gap-2 overflow-x-auto py-0.5">
+                        <div class="flex items-center gap-1 shrink-0">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-600 border border-amber-400 inline-block"></span>
+                            <span class="text-slate-400">Cu-Murexida</span>
+                        </div>
+                        <i class="fa-solid fa-angle-right text-[9px] text-slate-600"></i>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <span class="w-2.5 h-2.5 rounded-full bg-purple-600 border border-purple-300 inline-block"></span>
+                            <span class="text-purple-300 font-bold">Viraje Violeta</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile-Thumb Optimized Titration Control Panel -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4 shadow-lg flex flex-col gap-2.5">
+                <div class="flex justify-between items-center px-1">
+                    <h3 class="text-xs sm:text-sm font-bold text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-cyan-400"></i> Control de Válvula
+                    </h3>
+                    <label class="text-[11px] sm:text-xs text-slate-400 cursor-pointer flex items-center gap-1.5 select-none">
+                        <input type="checkbox" id="chk-stirrer" checked class="w-4 h-4 rounded bg-slate-950 border-slate-700 text-cyan-500 focus:ring-0">
+                        <span>Agitador</span>
+                    </label>
+                </div>
+
+                <!-- Large Touch Control Buttons -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <button id="btn-drop-step" class="touch-btn py-2.5 px-2 bg-slate-800 hover:bg-slate-700 active:bg-cyan-950 text-cyan-300 border border-cyan-500/30 rounded-xl font-medium text-xs transition flex flex-col items-center justify-center gap-0.5 active:scale-95">
+                        <i class="fa-solid fa-droplet text-sm"></i>
+                        <span>+0.05 mL (Gota)</span>
+                    </button>
+
+                    <button id="btn-flow-slow" class="touch-btn py-2.5 px-2 bg-slate-800 hover:bg-slate-700 active:bg-indigo-950 text-indigo-300 border border-indigo-500/30 rounded-xl font-medium text-xs transition flex flex-col items-center justify-center gap-0.5 active:scale-95">
+                        <i class="fa-solid fa-faucet-drip text-sm"></i>
+                        <span>Goteo Lento</span>
+                    </button>
+
+                    <button id="btn-flow-fast" class="touch-btn py-2.5 px-2 bg-slate-800 hover:bg-slate-700 active:bg-blue-950 text-blue-300 border border-blue-500/30 rounded-xl font-medium text-xs transition flex flex-col items-center justify-center gap-0.5 active:scale-95">
+                        <i class="fa-solid fa-water text-sm"></i>
+                        <span>Flujo Continuo</span>
+                    </button>
+
+                    <button id="btn-stop-valve" class="touch-btn col-span-2 sm:col-span-1 py-2.5 px-2 bg-rose-600/20 hover:bg-rose-600/30 active:bg-rose-900/50 text-rose-300 border border-rose-500/40 rounded-xl font-bold text-xs transition flex flex-col items-center justify-center gap-0.5 active:scale-95">
+                        <i class="fa-solid fa-hand text-sm"></i>
+                        <span>CERRAR VÁLVULA</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Column: Calculations & Results (Lg 5 Cols) -->
+        <section class="lg:col-span-5 flex flex-col gap-3 sm:gap-4">
+
+            <!-- Phase 2: Calculations Form -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 sm:p-5 shadow-xl flex flex-col gap-3.5">
+                <div class="border-b border-slate-800 pb-2.5 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-sm sm:text-base font-bold text-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-calculator text-cyan-400"></i> Fase de Cálculos
+                        </h2>
+                        <p class="text-[11px] text-slate-400">Ingresa los valores analíticos calculados</p>
+                    </div>
+                    <span id="badge-phase" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-800 text-slate-400 border border-slate-700 shrink-0">
+                        Paso 1: Titular
+                    </span>
+                </div>
+
+                <!-- Parameters Summary Grid -->
+                <div class="grid grid-cols-2 gap-2 text-xs bg-slate-950/80 p-2.5 rounded-xl border border-slate-800/80 font-mono">
+                    <div>
+                        <span class="text-slate-500 block text-[10px]">Alícuota (V<sub>Cu</sub>):</span>
+                        <span class="text-slate-200 font-semibold" id="calc-v-aliquot">25.00 mL</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 block text-[10px]">Molaridad EDTA:</span>
+                        <span class="text-cyan-400 font-semibold" id="calc-m-edta">0.0200 M</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 block text-[10px]">Gastado EDTA (V<sub>EDTA</sub>):</span>
+                        <span class="text-amber-400 font-semibold" id="calc-v-edta">-- mL</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 block text-[10px]">Masa Molar Cu:</span>
+                        <span class="text-slate-300">63.55 g/mol</span>
+                    </div>
+                </div>
+
+                <!-- Form Inputs optimized for mobile keypad -->
+                <form id="form-calculations" class="flex flex-col gap-3">
+                    
+                    <!-- Input 1: Cu2+ Molarity -->
+                    <div class="flex flex-col gap-1">
+                        <label for="input-molarity" class="text-xs font-semibold text-slate-300 flex justify-between">
+                            <span>1. Molaridad de Cu²⁺ (M):</span>
+                            <span class="text-[10px] text-slate-500 font-mono">Tol: ±2%</span>
+                        </label>
+                        <div class="relative">
+                            <input type="number" step="any" inputmode="decimal" id="input-molarity" placeholder="Ej: 0.0245" disabled class="w-full h-11 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-cyan-300 font-mono focus:outline-none focus:border-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed">
+                            <span class="absolute right-3 top-3 text-xs text-slate-500 font-mono">mol/L</span>
+                        </div>
+                    </div>
+
+                    <!-- Input 2: Cu g/L -->
+                    <div class="flex flex-col gap-1">
+                        <label for="input-gl-cu" class="text-xs font-semibold text-slate-300 flex justify-between">
+                            <span>2. Concentración de Cu²⁺ (g/L):</span>
+                            <span class="text-[10px] text-slate-500 font-mono">M × 63.55</span>
+                        </label>
+                        <div class="relative">
+                            <input type="number" step="any" inputmode="decimal" id="input-gl-cu" placeholder="Ej: 1.557" disabled class="w-full h-11 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-cyan-300 font-mono focus:outline-none focus:border-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed">
+                            <span class="absolute right-3 top-3 text-xs text-slate-500 font-mono">g/L</span>
+                        </div>
+                    </div>
+
+                    <!-- Input 3: CuSO4.5H2O g/L -->
+                    <div class="flex flex-col gap-1">
+                        <label for="input-gl-hydrate" class="text-xs font-semibold text-slate-300 flex justify-between">
+                            <span>3. Conc. CuSO<sub>4</sub>·5H<sub>2</sub>O (g/L):</span>
+                            <span class="text-[10px] text-slate-500 font-mono">MM = 249.68</span>
+                        </label>
+                        <div class="relative">
+                            <input type="number" step="any" inputmode="decimal" id="input-gl-hydrate" placeholder="Ej: 6.117" disabled class="w-full h-11 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-cyan-300 font-mono focus:outline-none focus:border-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed">
+                            <span class="absolute right-3 top-3 text-xs text-slate-500 font-mono">g/L</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="btn-submit-calc" disabled class="touch-btn mt-1 w-full bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-800 disabled:text-slate-600 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition shadow-lg flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-circle-check text-sm"></i>
+                        <span>Evaluarme y Ver Resultados</span>
+                    </button>
+                </form>
+
+                <!-- Calculator Widget Toggle -->
+                <div class="border-t border-slate-800 pt-2.5">
+                    <button id="toggle-calc-widget" class="text-xs text-slate-400 hover:text-cyan-400 transition flex items-center gap-1.5 py-1">
+                        <i class="fa-solid fa-calculator"></i> <span id="toggle-calc-text">Mostrar Calculadora Auxiliar</span>
+                    </button>
+
+                    <!-- Calculator Keyboard Panel -->
+                    <div id="calc-widget" class="hidden mt-2.5 bg-slate-950 border border-slate-800 p-2.5 rounded-xl">
+                        <div class="bg-slate-900 p-2 rounded-lg text-right font-mono text-base text-cyan-400 mb-2 overflow-x-auto min-h-[38px] flex items-center justify-end" id="calc-display">0</div>
+                        <div class="grid grid-cols-4 gap-1.5 text-xs font-mono">
+                            <button class="calc-btn p-3 bg-slate-800 active:bg-slate-700 rounded-lg text-rose-400 font-bold" data-act="C">C</button>
+                            <button class="calc-btn p-3 bg-slate-800 active:bg-slate-700 rounded-lg text-slate-300" data-act="(">(</button>
+                            <button class="calc-btn p-3 bg-slate-800 active:bg-slate-700 rounded-lg text-slate-300" data-act=")">)</button>
+                            <button class="calc-btn p-3 bg-slate-800 active:bg-slate-700 rounded-lg text-cyan-400 font-bold" data-act="/">/</button>
+
+                            <button class="calc-btn p-3 bg-slate-800 active:bg-slate-700 rounded-lg text-slate-200" data-act="7">7</button>
+                            <button class="calc-btn p-3 bg-slate-800 active:bg-slate-700 rounded-lg text-slate-200" data-act="8">8</button>
+                            <button class="calc-btn p-3 bg-slate-800 active:bg-slate-700 rounded-lg text-slate-200" data-act="9">9</button>
+                            <button class="calc-btn p-3 bg-slate-800 active:bg-slate-700 rounded-lg text-cyan-400 font-bold" data-act="*">*</button>
+
+                            <button class="calc-btn p-3 bg-slate-800 active:bg-slate-700 rounded-lg text-slate-200" data-act="4">4</button>
+                            <button class="calc-btn p-3 bg-slate-800 active:bg-slate-700 rounded-lg text-slate-200" data-act="5">5</button>
+                            <button class="calc-btn p-3 bg-slate-800 active:bg-slate-700 rounded-lg text-slate-200" data-act="6">6</button>
+                            <button class="calc-btn p-3 bg-slate-800 active:bg-slate-700 rounded-lg text-cyan-400 font-bold" data-act="-">-</button>
+
+                            <button class="calc-btn p-3 bg-slate-800 active:bg-slate-700 rounded-lg text-slate-200" data-act="1">1</button>
+                            <button class="calc-btn p-3 bg-slate-800 active:bg-slate-700 rounded-lg text-slate-200" data-act="2">2</button>
+                            <button class="calc-btn p-3 bg-slate-800 active:bg-slate-700 rounded-lg text-slate-200" data-act="3">3</button>
+                            <button class="calc-btn p-3 bg-slate-800 active:bg-slate-700 rounded-lg text-cyan-400 font-bold" data-act="+">+</button>
+
+                            <button class="calc-btn p-3 bg-slate-800 active:bg-slate-700 rounded-lg text-slate-200" data-act="0">0</button>
+                            <button class="calc-btn p-3 bg-slate-800 active:bg-slate-700 rounded-lg text-slate-200" data-act=".">.</button>
+                            <button class="calc-btn col-span-2 p-3 bg-cyan-600 active:bg-cyan-500 rounded-lg text-white font-bold" data-act="=">=</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Score & Detailed Feedback Panel -->
+            <div id="panel-results" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl flex flex-col gap-3.5">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
+                    <h3 class="text-sm sm:text-base font-bold text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-award text-amber-400"></i> Evaluación Analítica
+                    </h3>
+                    <div id="star-rating" class="text-amber-400 text-xs sm:text-sm flex gap-1"></div>
+                </div>
+
+                <!-- Rank Header -->
+                <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-center">
+                    <span id="rank-title" class="text-base sm:text-lg font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-cyan-400">
+                        --
+                    </span>
+                    <p id="rank-description" class="text-xs text-slate-400 mt-1">--</p>
+                </div>
+
+                <!-- Breakdown Cards -->
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 flex flex-col">
+                        <span class="text-slate-400 text-[10px] mb-0.5">Volumen Gastado:</span>
+                        <span id="metric-titration-diff" class="font-bold text-slate-200">--</span>
+                        <span id="metric-titration-status" class="text-[10px] mt-1 text-slate-400">--</span>
+                    </div>
+
+                    <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 flex flex-col">
+                        <span class="text-slate-400 text-[10px] mb-0.5">Molaridad Ingresada:</span>
+                        <span id="metric-calc-accuracy" class="font-bold text-slate-200">--</span>
+                        <span id="metric-calc-status" class="text-[10px] mt-1 text-slate-400">--</span>
+                    </div>
+                </div>
+
+                <!-- Step-by-Step Solution Breakdown -->
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs flex flex-col gap-2">
+                    <span class="font-bold text-cyan-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-calculator"></i> Solución Paso a Paso:
+                    </span>
+                    <div id="solution-steps" class="space-y-2 text-slate-300 font-mono text-[11px] leading-relaxed">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Modal for Theory and Instructions -->
+    <div id="modal-theory" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-slate-900 border border-slate-800 max-w-xl w-full rounded-2xl p-4 sm:p-6 shadow-2xl overflow-y-auto max-h-[90vh] flex flex-col gap-3.5">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
+                <h2 class="text-base sm:text-lg font-bold text-cyan-400 flex items-center gap-2">
+                    <i class="fa-solid fa-flask text-indigo-400"></i> Fundamento Químico
+                </h2>
+                <button id="btn-close-modal" class="text-slate-400 hover:text-white text-xl p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="text-xs text-slate-300 space-y-3 leading-relaxed">
+                <div>
+                    <h3 class="text-xs font-bold text-slate-100 border-l-2 border-cyan-500 pl-2 mb-1">1. Reacción de Complejación</h3>
+                    <p>
+                        El catión cúprico (Cu²⁺) reacciona estequiométricamente 1:1 con la sal disódica de EDTA (EDTA⁴⁻) para formar un complejo de coordinación muy estable:
+                    </p>
+                    <div class="bg-slate-950 p-2 rounded-lg text-center font-mono text-cyan-300 border border-slate-800 mt-1.5">
+                        Cu²⁺ + EDTA⁴⁻ → [Cu(EDTA)]²⁻
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-xs font-bold text-slate-100 border-l-2 border-amber-500 pl-2 mb-1">2. Viraje del Indicador Murexida</h3>
+                    <p>
+                        En medio amortiguado (pH ~8-10), la Murexida se une débilmente al Cu²⁺ generando un color <b>amarillo / marrón</b>.
+                    </p>
+                    <p class="mt-1">
+                        Al adicionar EDTA, éste desplaza al indicador por formar un complejo más fuerte. Al liberarse toda la Murexida, la solución pasa abruptamente a <b>violeta / púrpura</b>.
+                    </p>
+                </div>
+
+                <div>
+                    <h3 class="text-xs font-bold text-slate-100 border-l-2 border-cyan-500 pl-2 mb-1">3. Fórmulas de Cálculo</h3>
+                    <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800 font-mono text-[11px] space-y-1">
+                        <p><b>Molaridad Cu²⁺:</b> M<sub>Cu</sub> = (M<sub>EDTA</sub> × V<sub>EDTA</sub>) / V<sub>alícuota</sub></p>
+                        <p><b>Concentración Cu²⁺:</b> C<sub>Cu</sub> = M<sub>Cu</sub> × 63.55 g/mol</p>
+                        <p><b>Conc. CuSO<sub>4</sub>·5H<sub>2</sub>O:</b> C<sub>sal</sub> = M<sub>Cu</sub> × 249.68 g/mol</p>
+                    </div>
+                </div>
+            </div>
+
+            <button id="btn-modal-gotit" class="touch-btn w-full bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl font-bold text-xs transition mt-1">
+                Entendido, ir a la experiencia
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-slate-800/80 py-2 px-4 text-center text-[10px] sm:text-xs text-slate-500">
+        Esc. 4044 Casale | Prof. Ing. Martinez • Química Analítica Cuantitativa
+    </footer>
+
+    <!-- JavaScript Logic & Sound Synth -->
+    <script>
+        // Web Audio API Sound Synth
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            playDrop() {
+                if (!this.enabled) return;
+                this.init();
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(850, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(420, this.ctx.currentTime + 0.04);
+
+                    gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.04);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.04);
+                } catch(e){}
+            }
+
+            playClick() {
+                if (!this.enabled) return;
+                this.init();
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(280, this.ctx.currentTime);
+
+                    gain.gain.setValueAtTime(0.04, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.025);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.025);
+                } catch(e){}
+            }
+
+            playSuccess() {
+                if (!this.enabled) return;
+                this.init();
+                try {
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.08);
+                    osc.frequency.setValueAtTime(783.99, now + 0.16);
+
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(now + 0.35);
+                } catch(e){}
+            }
+        }
+
+        const sfx = new SoundFX();
+
+        // Molar Constants
+        const MW_CU = 63.55;
+        const MW_CUSO4_5H2O = 249.68;
+
+        // State Container
+        let gameState = {
+            aliquotVol: 25.00,
+            edtaMolarity: 0.0200,
+            unknownCuMolarity: 0.0350,
+            exactEquivalenceVol: 0.00,
+            addedVol: 0.00,
+            flowRate: 0,
+            isTitrationClosed: false,
+            stirring: true
+        };
+
+        let timerInterval = null;
+
+        // DOM Elements
+        const elDisplayBuretteVol = document.getElementById('display-burette-vol');
+        const elDisplayAddedVol = document.getElementById('display-added-vol');
+        const elDisplayAliquot = document.getElementById('display-aliquot');
+        const elDisplayEdtaM = document.getElementById('display-edta-m');
+
+        const elCalcVAliquot = document.getElementById('calc-v-aliquot');
+        const elCalcMEdta = document.getElementById('calc-m-edta');
+        const elCalcVEdta = document.getElementById('calc-v-edta');
+
+        const elStatusBadge = document.getElementById('titration-status-badge');
+        const elPhaseBadge = document.getElementById('badge-phase');
+
+        const svgFlaskLiquid = document.getElementById('svg-flask-liquid');
+        const svgBuretteLiquid = document.getElementById('svg-burette-liquid');
+        const svgDroplet = document.getElementById('svg-droplet');
+        const svgValveHandle = document.getElementById('svg-valve-handle');
+        const svgFlaskGroup = document.getElementById('svg-flask-group');
+
+        const btnDropStep = document.getElementById('btn-drop-step');
+        const btnFlowSlow = document.getElementById('btn-flow-slow');
+        const btnFlowFast = document.getElementById('btn-flow-fast');
+        const btnStopValve = document.getElementById('btn-stop-valve');
+        const chkStirrer = document.getElementById('chk-stirrer');
+
+        const inputMolarity = document.getElementById('input-molarity');
+        const inputGlCu = document.getElementById('input-gl-cu');
+        const inputGlHydrate = document.getElementById('input-gl-hydrate');
+        const btnSubmitCalc = document.getElementById('btn-submit-calc');
+        const formCalc = document.getElementById('form-calculations');
+
+        const panelResults = document.getElementById('panel-results');
+
+        // Game Initialization
+        function initGame() {
+            stopFlow();
+
+            gameState.aliquotVol = 25.00;
+            gameState.edtaMolarity = parseFloat((Math.random() * (0.0450 - 0.0150) + 0.0150).toFixed(4));
+            gameState.unknownCuMolarity = parseFloat((Math.random() * (0.0600 - 0.0120) + 0.0120).toFixed(4));
+
+            // Theoretical volume needed
+            gameState.exactEquivalenceVol = parseFloat(((gameState.unknownCuMolarity * gameState.aliquotVol) / gameState.edtaMolarity).toFixed(2));
+
+            gameState.addedVol = 0.00;
+            gameState.flowRate = 0;
+            gameState.isTitrationClosed = false;
+            gameState.stirring = chkStirrer.checked;
+
+            // Update UI Displays
+            elDisplayAliquot.textContent = `${gameState.aliquotVol.toFixed(2)} mL`;
+            elDisplayEdtaM.textContent = `${gameState.edtaMolarity.toFixed(4)} M`;
+            elCalcVAliquot.textContent = `${gameState.aliquotVol.toFixed(2)} mL`;
+            elCalcMEdta.textContent = `${gameState.edtaMolarity.toFixed(4)} M`;
+            elCalcVEdta.textContent = `-- mL`;
+
+            elStatusBadge.className = "px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1 w-fit";
+            elStatusBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> <span>Listo para Titular</span>`;
+
+            elPhaseBadge.textContent = "Paso 1: Titular";
+            elPhaseBadge.className = "px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-800 text-slate-400 border border-slate-700 shrink-0";
+
+            // Form Reset
+            inputMolarity.value = "";
+            inputGlCu.value = "";
+            inputGlHydrate.value = "";
+            inputMolarity.disabled = true;
+            inputGlCu.disabled = true;
+            inputGlHydrate.disabled = true;
+            btnSubmitCalc.disabled = true;
+
+            panelResults.classList.add('hidden');
+
+            updateBuretteUI();
+            updateFlaskColor();
+
+            if (gameState.stirring) {
+                svgFlaskGroup.classList.add('stirring');
+            } else {
+                svgFlaskGroup.classList.remove('stirring');
+            }
+        }
+
+        // Color Interpolation for Indicator
+        function updateFlaskColor() {
+            const added = gameState.addedVol;
+            const eq = gameState.exactEquivalenceVol;
+            const diff = added - eq;
+
+            let colorHex = "#d97706";
+
+            if (diff < -1.5) {
+                colorHex = "#d97706";
+            } else if (diff >= -1.5 && diff < -0.2) {
+                const ratio = (added - (eq - 1.5)) / 1.3;
+                colorHex = interpolateColor("#d97706", "#7e22ce", ratio);
+            } else if (Math.abs(diff) <= 0.25) {
+                colorHex = "#7e22ce";
+            } else if (diff > 0.25 && diff <= 1.5) {
+                colorHex = "#a855f7";
+            } else {
+                colorHex = "#c084fc";
+            }
+
+            svgFlaskLiquid.setAttribute('fill', colorHex);
+        }
+
+        function interpolateColor(color1, color2, factor) {
+            if (factor > 1) factor = 1;
+            if (factor < 0) factor = 0;
+            const c1 = parseInt(color1.slice(1), 16);
+            const c2 = parseInt(color2.slice(1), 16);
+
+            const r1 = (c1 >> 16) & 0xff, g1 = (c1 >> 8) & 0xff, b1 = c1 & 0xff;
+            const r2 = (c2 >> 16) & 0xff, g2 = (c2 >> 8) & 0xff, b2 = c2 & 0xff;
+
+            const r = Math.round(r1 + factor * (r2 - r1));
+            const g = Math.round(g1 + factor * (g2 - g1));
+            const b = Math.round(b1 + factor * (b2 - b1));
+
+            return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+        }
+
+        function updateBuretteUI() {
+            elDisplayBuretteVol.innerHTML = `${gameState.addedVol.toFixed(2)} <span class="text-xs font-normal text-slate-400">mL</span>`;
+            elDisplayAddedVol.textContent = `${gameState.addedVol.toFixed(2)} mL`;
+
+            const maxPx = 240;
+            const currentHeight = Math.max(0, maxPx - (gameState.addedVol / 50.0) * maxPx);
+            svgBuretteLiquid.setAttribute('height', currentHeight);
+            svgBuretteLiquid.setAttribute('y', 30 + (maxPx - currentHeight));
+        }
+
+        function addVolume(amount) {
+            if (gameState.isTitrationClosed) return;
+
+            gameState.addedVol = parseFloat((gameState.addedVol + amount).toFixed(2));
+            if (gameState.addedVol > 50.0) {
+                gameState.addedVol = 50.0;
+                stopFlow();
+            }
+
+            sfx.playDrop();
+            animateDroplet();
+            updateBuretteUI();
+            updateFlaskColor();
+        }
+
+        function animateDroplet() {
+            svgDroplet.setAttribute('opacity', '1');
+            svgDroplet.setAttribute('cy', '312');
+
+            let start = null;
+            function step(timestamp) {
+                if (!start) start = timestamp;
+                let progress = (timestamp - start) / 110;
+                if (progress < 1) {
+                    svgDroplet.setAttribute('cy', 312 + progress * (400 - 312));
+                    requestAnimationFrame(step);
+                } else {
+                    svgDroplet.setAttribute('opacity', '0');
+                }
+            }
+            requestAnimationFrame(step);
+        }
+
+        function startFlow(rate) {
+            if (gameState.isTitrationClosed) return;
+            stopFlow();
+            sfx.playClick();
+            gameState.flowRate = rate;
+
+            if (rate === 1) svgValveHandle.setAttribute('transform', 'rotate(30)');
+            else if (rate === 2) svgValveHandle.setAttribute('transform', 'rotate(60)');
+            else if (rate === 3) svgValveHandle.setAttribute('transform', 'rotate(90)');
+
+            const intervalMs = rate === 1 ? 500 : rate === 2 ? 180 : 65;
+            const stepVol = rate === 1 ? 0.05 : rate === 2 ? 0.08 : 0.20;
+
+            timerInterval = setInterval(() => {
+                addVolume(stepVol);
+            }, intervalMs);
+        }
+
+        function stopFlow() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = null;
+            gameState.flowRate = 0;
+            svgValveHandle.setAttribute('transform', 'rotate(0)');
+        }
+
+        function closeBurettePermanently() {
+            stopFlow();
+            sfx.playClick();
+            gameState.isTitrationClosed = true;
+
+            elCalcVEdta.textContent = `${gameState.addedVol.toFixed(2)} mL`;
+
+            elStatusBadge.className = "px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1 w-fit";
+            elStatusBadge.innerHTML = `<i class="fa-solid fa-lock text-[10px]"></i> <span>Bureta Cerrada</span>`;
+
+            elPhaseBadge.textContent = "Paso 2: Calcular";
+            elPhaseBadge.className = "px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-cyan-950 text-cyan-400 border border-cyan-800 shrink-0";
+
+            inputMolarity.disabled = false;
+            inputGlCu.disabled = false;
+            inputGlHydrate.disabled = false;
+            btnSubmitCalc.disabled = false;
+            inputMolarity.focus();
+        }
+
+        // Controls Bindings
+        btnDropStep.addEventListener('click', () => {
+            stopFlow();
+            addVolume(0.05);
+        });
+
+        btnFlowSlow.addEventListener('click', () => startFlow(2));
+        btnFlowFast.addEventListener('click', () => startFlow(3));
+        btnStopValve.addEventListener('click', () => closeBurettePermanently());
+
+        chkStirrer.addEventListener('change', (e) => {
+            gameState.stirring = e.target.checked;
+            if (gameState.stirring) svgFlaskGroup.classList.add('stirring');
+            else svgFlaskGroup.classList.remove('stirring');
+        });
+
+        const handleReset = () => {
+            sfx.playClick();
+            initGame();
+        };
+
+        document.getElementById('btn-reset-main').addEventListener('click', handleReset);
+        document.getElementById('btn-reset-mobile').addEventListener('click', handleReset);
+
+        // Modal Controls
+        const modalTheory = document.getElementById('modal-theory');
+        const openModal = () => {
+            modalTheory.classList.remove('opacity-0', 'pointer-events-none');
+        };
+        const closeModal = () => {
+            modalTheory.classList.add('opacity-0', 'pointer-events-none');
+        };
+
+        document.getElementById('btn-theory-modal').addEventListener('click', openModal);
+        document.getElementById('btn-theory-modal-mobile').addEventListener('click', openModal);
+        document.getElementById('btn-close-modal').addEventListener('click', closeModal);
+        document.getElementById('btn-modal-gotit').addEventListener('click', closeModal);
+
+        // Sound Toggle
+        document.getElementById('btn-sound-toggle').addEventListener('click', () => {
+            sfx.enabled = !sfx.enabled;
+            const icon = document.getElementById('sound-icon');
+            if (sfx.enabled) {
+                icon.className = "fa-solid fa-volume-high text-cyan-400";
+            } else {
+                icon.className = "fa-solid fa-volume-xmark text-slate-500";
+            }
+        });
+
+        // Form Submit & Evaluation
+        formCalc.addEventListener('submit', (e) => {
+            e.preventDefault();
+            evaluateResults();
+        });
+
+        function evaluateResults() {
+            const userM = parseFloat(inputMolarity.value);
+            const userGlCu = parseFloat(inputGlCu.value);
+            const userGlHydrate = parseFloat(inputGlHydrate.value);
+
+            if (isNaN(userM) || isNaN(userGlCu)) {
+                alert("Por favor completa al menos los campos 1 y 2 con números válidos.");
+                return;
+            }
+
+            const actualAddedVol = gameState.addedVol;
+            const exactVol = gameState.exactEquivalenceVol;
+
+            const calcCuMolarity = (gameState.edtaMolarity * actualAddedVol) / gameState.aliquotVol;
+            const calcGlCu = calcCuMolarity * MW_CU;
+            const calcGlHydrate = calcCuMolarity * MW_CUSO4_5H2O;
+
+            const volDiff = actualAddedVol - exactVol;
+            let titrationScore = 0;
+            let titrationText = "";
+
+            if (Math.abs(volDiff) <= 0.10) {
+                titrationScore = 50;
+                titrationText = "¡Viraje exacto (+/- 0.1 mL)!";
+            } else if (Math.abs(volDiff) <= 0.30) {
+                titrationScore = 40;
+                titrationText = "Excelente lectura (+/- 0.3 mL)";
+            } else if (Math.abs(volDiff) <= 0.70) {
+                titrationScore = 25;
+                titrationText = volDiff < 0 ? "Subtitulado (falta EDTA)" : "Ligeramente sobretitulado";
+            } else {
+                titrationScore = 10;
+                titrationText = volDiff < 0 ? "Faltó volumen por añadir" : "Exceso evidente de EDTA";
+            }
+
+            const errM = Math.abs((userM - calcCuMolarity) / (calcCuMolarity || 1));
+            const errGlCu = Math.abs((userGlCu - calcGlCu) / (calcGlCu || 1));
+
+            let calcScore = 0;
+            if (errM <= 0.02 && errGlCu <= 0.02) calcScore = 50;
+            else if (errM <= 0.05 && errGlCu <= 0.05) calcScore = 35;
+            else if (errM <= 0.10 && errGlCu <= 0.10) calcScore = 20;
+            else calcScore = 5;
+
+            const totalScore = titrationScore + calcScore;
+
+            let rankTitle = "";
+            let rankDesc = "";
+            let starsHtml = "";
+
+            if (totalScore >= 90) {
+                rankTitle = "🏆 ¡Químico Analítico Experto!";
+                rankDesc = "Excelente precisión en la titulación y en los cálculos estequiométricos.";
+                starsHtml = '<i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>';
+                sfx.playSuccess();
+            } else if (totalScore >= 70) {
+                rankTitle = "🧪 Analista Junior Cualificado";
+                rankDesc = "Muy buen desempeño práctico. Mínima desviación en el viraje o redondeo.";
+                starsHtml = '<i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-regular fa-star"></i>';
+            } else if (totalScore >= 45) {
+                rankTitle = "📋 Aprendiz de Laboratorio";
+                rankDesc = "Revisa con atención el punto de viraje de la Murexida o repasa tus fórmulas.";
+                starsHtml = '<i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-regular fa-star"></i><i class="fa-regular fa-star"></i>';
+            } else {
+                rankTitle = "⚠️ Muestra Repetida";
+                rankDesc = "Diferencia considerable en el volumen o cálculo. ¡Intenta nuevamente con otra muestra!";
+                starsHtml = '<i class="fa-solid fa-star"></i><i class="fa-regular fa-star"></i><i class="fa-regular fa-star"></i><i class="fa-regular fa-star"></i><i class="fa-regular fa-star"></i>';
+            }
+
+            document.getElementById('star-rating').innerHTML = starsHtml;
+            document.getElementById('rank-title').textContent = rankTitle;
+            document.getElementById('rank-description').textContent = rankDesc;
+
+            document.getElementById('metric-titration-diff').textContent = `${actualAddedVol.toFixed(2)} mL (Teórico: ${exactVol.toFixed(2)} mL)`;
+            document.getElementById('metric-titration-status').textContent = titrationText;
+
+            document.getElementById('metric-calc-accuracy').textContent = `Molaridad: ${userM.toFixed(4)} M`;
+            document.getElementById('metric-calc-status').textContent = `Esperado: ${calcCuMolarity.toFixed(4)} M`;
+
+            const stepsHtml = `
+                <div>1. <b>Molaridad Cu²⁺:</b><br>&nbsp;&nbsp;M<sub>Cu</sub> = (${gameState.edtaMolarity.toFixed(4)} M × ${actualAddedVol.toFixed(2)} mL) / ${gameState.aliquotVol.toFixed(2)} mL = <b>${calcCuMolarity.toFixed(4)} M</b></div>
+                <div>2. <b>Masa en g/L de Cu²⁺:</b><br>&nbsp;&nbsp;Conc. Cu = ${calcCuMolarity.toFixed(4)} M × 63.55 g/mol = <b>${calcGlCu.toFixed(3)} g/L</b></div>
+                <div>3. <b>Masa en g/L de CuSO₄·5H₂O:</b><br>&nbsp;&nbsp;Conc. Sal = ${calcCuMolarity.toFixed(4)} M × 249.68 g/mol = <b>${calcGlHydrate.toFixed(3)} g/L</b></div>
+            `;
+            document.getElementById('solution-steps').innerHTML = stepsHtml;
+
+            panelResults.classList.remove('hidden');
+            panelResults.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Calculator Pad
+        const calcWidget = document.getElementById('calc-widget');
+        const calcDisplay = document.getElementById('calc-display');
+        let calcExpr = "";
+
+        document.getElementById('toggle-calc-widget').addEventListener('click', () => {
+            calcWidget.classList.toggle('hidden');
+            const isHidden = calcWidget.classList.contains('hidden');
+            document.getElementById('toggle-calc-text').textContent = isHidden ? "Mostrar Calculadora Auxiliar" : "Ocultar Calculadora";
+        });
+
+        document.querySelectorAll('.calc-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const act = btn.getAttribute('data-act');
+                sfx.playClick();
+
+                if (act === 'C') {
+                    calcExpr = "";
+                    calcDisplay.textContent = "0";
+                } else if (act === '=') {
+                    try {
+                        const res = eval(calcExpr);
+                        calcDisplay.textContent = Number.isInteger(res) ? res : res.toFixed(5);
+                        calcExpr = res.toString();
+                    } catch(e) {
+                        calcDisplay.textContent = "Error";
+                        calcExpr = "";
+                    }
+                } else {
+                    calcExpr += act;
+                    calcDisplay.textContent = calcExpr;
+                }
+            });
+        });
+
+        window.onload = function() {
+            initGame();
+        };
+    </script>
+</body>
+</html>
