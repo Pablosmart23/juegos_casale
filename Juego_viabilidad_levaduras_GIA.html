@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Simulador de Conteo y Viabilidad de Levaduras - Cámara de Neubauer</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <!-- MathJax for mathematical expressions rendering -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        lab: {
+                            50: '#f4f8fa',
+                            100: '#e2edee',
+                            800: '#1e383d',
+                            900: '#0f2428',
+                        },
+                        yeast: {
+                            live: '#f5e6ca',
+                            dead: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Touch safety and prevents zooming on mobile tap */
+        body {
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            background-color: #0b1315;
+            color: #e2edee;
+        }
+
+        /* Lens optics simulation */
+        .microscope-lens {
+            border-radius: 50%;
+            box-shadow: 
+                inset 0 0 25px rgba(0, 0, 0, 0.8),
+                inset 0 0 8px rgba(255, 255, 255, 0.3),
+                0 0 0 12px #18282c,
+                0 0 0 16px #0d1719,
+                0 10px 30px rgba(0, 0, 0, 0.7);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Vignette effect */
+        .microscope-lens::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 50%;
+            background: radial-gradient(circle, transparent 62%, rgba(5, 12, 14, 0.85) 90%, rgba(0, 0, 0, 0.98) 100%);
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f2428;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2c4d53;
+            border-radius: 3px;
+        }
+
+        .border-rule-top-left {
+            border-top: 2px solid #22c55e !important;
+            border-left: 2px solid #22c55e !important;
+        }
+        .border-rule-bottom-right {
+            border-bottom: 2px solid #ef4444 !important;
+            border-right: 2px solid #ef4444 !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans antialiased text-slate-200 bg-slate-950">
+
+    <!-- Header / Navbar -->
+    <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between sticky top-0 z-30 shadow-md">
+        <div class="flex items-center gap-2">
+            <div class="bg-cyan-600 text-white p-2 rounded-lg flex items-center justify-center">
+                <i class="fa-solid fa-microscope text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-base font-bold text-white tracking-wide leading-tight">Esc. 4044 Casale</h1>
+                <p class="text-xs text-cyan-400 font-medium">prof.: Ing. Martinez</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button id="btn-help" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition-all">
+                <i class="fa-solid fa-book-open"></i> <span class="hidden sm:inline">Guía / Reglas</span>
+            </button>
+            <button id="btn-reset" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-emerald-900/30 transition-all">
+                <i class="fa-solid fa-rotate-right"></i> <span>Nuevo Muestra</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-5 flex flex-col lg:flex-row gap-5 items-stretch">
+
+        <!-- LEFT COLUMN: Microscope Lens and Visual Controls -->
+        <div class="flex-1 flex flex-col items-center justify-start bg-slate-900/60 border border-slate-800 rounded-2xl p-4 shadow-xl backdrop-blur-sm">
+            
+            <!-- Controls Toolbar above lens -->
+            <div class="w-full flex items-center justify-between gap-2 mb-3 text-xs bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                <div class="flex items-center gap-2">
+                    <label class="text-slate-400 font-medium">Dificultad:</label>
+                    <select id="select-difficulty" class="bg-slate-800 text-cyan-300 font-semibold border border-slate-700 rounded-md px-2 py-1 outline-none focus:border-cyan-500">
+                        <option value="easy">Fácil (Baja densidad)</option>
+                        <option value="medium" selected>Media (Viabilidad)</option>
+                        <option value="hard">Difícil (Alta densidad + Dilución)</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-1 bg-slate-900 px-2.5 py-1 rounded-md border border-slate-800 text-emerald-400 font-mono">
+                    <i class="fa-solid fa-flask text-xs"></i>
+                    <span>Dilución: <strong id="dilution-display" class="text-white">1:10</strong></span>
+                </div>
+            </div>
+
+            <!-- Viewport Microscope Circle Container -->
+            <div class="relative w-full aspect-square max-w-[380px] sm:max-w-[420px] flex items-center justify-center my-auto">
+                <div id="lens-wrapper" class="microscope-lens w-full h-full bg-slate-950 relative flex items-center justify-center cursor-crosshair select-none">
+                    
+                    <!-- Canvas Element for drawing grid and yeast cells -->
+                    <canvas id="microscope-canvas" class="w-full h-full block rounded-full transition-filter duration-200"></canvas>
+
+                    <!-- Crosshair Overlay center marker -->
+                    <div class="absolute inset-0 pointer-events-none flex items-center justify-center opacity-30">
+                        <div class="w-full h-[1px] bg-red-400/50"></div>
+                        <div class="h-full w-[1px] bg-red-400/50 absolute"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Microscope Adjustments (Focus / Zoom / Lighting) -->
+            <div class="w-full grid grid-cols-2 gap-3 mt-4 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between text-xs text-slate-400 font-medium">
+                        <span><i class="fa-solid fa-sliders text-cyan-400 mr-1"></i>Enfoque Fino</span>
+                        <span id="focus-val" class="font-mono text-cyan-300">100%</span>
+                    </div>
+                    <input type="range" id="slider-focus" min="0" max="100" value="85" class="w-full accent-cyan-500 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                </div>
+
+                <div class="flex items-center justify-between text-xs px-2 bg-slate-900 rounded-lg border border-slate-800">
+                    <span class="text-slate-300 font-medium"><i class="fa-solid fa-highlighter text-yellow-400 mr-1.5"></i>Marcar al tocar:</span>
+                    <button id="toggle-markers" class="px-2.5 py-1 bg-cyan-600 text-white font-semibold rounded text-[11px] transition-colors">
+                        SÍ (Activo)
+                    </button>
+                </div>
+            </div>
+
+            <div class="w-full flex items-center justify-between text-[11px] text-slate-400 mt-2 px-1">
+                <span><i class="fa-solid fa-info-circle text-cyan-400"></i> Marcados manuales: <strong id="tag-count" class="text-white font-mono">0</strong></span>
+                <button id="btn-clear-tags" class="text-slate-400 hover:text-red-400 underline transition-colors">Limpiar marcas</button>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Instructions, Data Input Form & Feedback -->
+        <div class="flex-1 flex flex-col justify-between bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl backdrop-blur-sm">
+            
+            <div>
+                <!-- Quadrant Info Header -->
+                <div class="bg-gradient-to-r from-slate-900 to-slate-800 border-l-4 border-cyan-500 p-3 rounded-r-xl mb-4">
+                    <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-square-poll-vertical text-cyan-400"></i>
+                        Cuadrante Central de Conteo (0.2 x 0.2 mm)
+                    </h2>
+                    <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+                        Cuenta las células en la matriz de 16 sub-cuadros. Aplica la <strong class="text-emerald-400">Regla de Inclusión</strong>: cuenta bordes Superior e Izquierdo; ignora Inferior y Derecho.
+                    </p>
+                </div>
+
+                <!-- Form Section -->
+                <form id="eval-form" class="space-y-3" onsubmit="return false;">
+                    
+                    <!-- Field 1: Total Cells -->
+                    <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+                        <label for="input-total" class="block text-xs font-semibold text-slate-300 mb-1">
+                            1. Recuento Total de Células Válidas
+                        </label>
+                        <div class="relative">
+                            <input type="number" id="input-total" placeholder="Ej: 32" min="0" required 
+                                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-cyan-300 focus:outline-none focus:border-cyan-500 transition-colors">
+                            <span class="absolute right-3 top-2.5 text-xs text-slate-500 font-mono">células</span>
+                        </div>
+                    </div>
+
+                    <!-- Field 2: Viability % -->
+                    <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+                        <div class="flex justify-between items-center mb-1">
+                            <label for="input-viability" class="block text-xs font-semibold text-slate-300">
+                                2. Porcentaje de Viabilidad (%)
+                            </label>
+                            <span class="text-[10px] text-slate-400 font-mono">(Vivas / Total × 100)</span>
+                        </div>
+                        <div class="relative">
+                            <input type="number" id="input-viability" step="0.1" placeholder="Ej: 87.5" min="0" max="100" required 
+                                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-cyan-300 focus:outline-none focus:border-cyan-500 transition-colors">
+                            <span class="absolute right-3 top-2.5 text-xs text-slate-500 font-mono">%</span>
+                        </div>
+                    </div>
+
+                    <!-- Field 3: Concentration -->
+                    <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+                        <div class="flex justify-between items-center mb-1">
+                            <label for="input-concentration" class="block text-xs font-semibold text-slate-300">
+                                3. Concentración Final (células/mL)
+                            </label>
+                            <button type="button" id="btn-formula-toggle" class="text-[11px] text-cyan-400 hover:underline">
+                                <i class="fa-solid fa-calculator"></i> Ver Fórmula
+                            </button>
+                        </div>
+                        <div class="relative">
+                            <input type="text" id="input-concentration" placeholder="Ej: 3.2e6 o 3200000" required 
+                                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-cyan-300 focus:outline-none focus:border-cyan-500 transition-colors">
+                            <span class="absolute right-3 top-2.5 text-xs text-slate-500 font-mono">cél/mL</span>
+                        </div>
+                    </div>
+
+                    <!-- Formula Helper Accordion -->
+                    <div id="formula-box" class="hidden bg-slate-900 p-3 rounded-xl border border-cyan-800/50 text-xs text-slate-300 space-y-2">
+                        <p class="font-bold text-cyan-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-graduation-cap"></i> Fórmula de Neubauer
+                        </p>
+                        <p class="font-mono bg-slate-950 p-2 rounded text-[11px] text-center text-emerald-300 overflow-x-auto">
+                            Conc (cél/mL) = (Células Contadas / Cuadros) × Dilución × 10⁴
+                        </p>
+                        <p class="text-[11px] text-slate-400">
+                            * Profundidad cámara = 0.1 mm. Volumen por sub-cuadro = \(2.5 \times 10^{-7}\) mL. Para 16 sub-cuadros (1 gran cuadro) el factor constante es \(10^4\).
+                        </p>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" id="btn-submit" class="w-full py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg shadow-cyan-950/50 flex items-center justify-center gap-2 transition-all transform active:scale-98">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <span>Verificar y Evaluar Resultados</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Verification / Results Display Area -->
+            <div id="result-modal" class="hidden mt-4 bg-slate-950 border border-slate-800 rounded-xl p-4 animate-fade-in">
+                <div class="flex items-center justify-between pb-2 border-b border-slate-800 mb-3">
+                    <h3 id="result-title" class="font-bold text-sm flex items-center gap-2">
+                        <!-- Filled dynamically -->
+                    </h3>
+                    <span id="score-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold"></span>
+                </div>
+
+                <div class="space-y-2 text-xs font-mono" id="result-details">
+                    <!-- Detailed row breakdown -->
+                </div>
+
+                <!-- Explanation / Pedagogical feedback -->
+                <div id="feedback-explanation" class="mt-3 p-2.5 bg-slate-900 rounded-lg text-xs text-slate-300 border border-slate-800 leading-relaxed">
+                    <!-- Dynamic feedback text -->
+                </div>
+
+                <!-- Anti-Cheat / Student Verification Code -->
+                <div class="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-500 font-mono">
+                    <span>Código Validación: <strong id="anti-cheat-hash" class="text-cyan-400"></strong></span>
+                    <button id="btn-copy-hash" class="text-slate-400 hover:text-white flex items-center gap-1">
+                        <i class="fa-solid fa-copy"></i> Copiar
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Help & Guide Modal -->
+    <div id="help-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-5 max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl">
+            
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h2 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-microscope text-cyan-400"></i>
+                    Manual de Recuento de Neubauer
+                </h2>
+                <button id="btn-close-help" class="text-slate-400 hover:text-white text-lg px-2">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Rules Grid Illustration -->
+            <div class="space-y-3 text-xs text-slate-300">
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <h3 class="font-bold text-cyan-300 mb-1">1. Regla de Inclusión / Exclusión de Bordes</h3>
+                    <p class="leading-relaxed">
+                        Para evitar contar células dos veces en cuadrantes adyacentes:
+                    </p>
+                    <ul class="list-disc list-inside mt-1.5 space-y-1 text-slate-300">
+                        <li><strong class="text-emerald-400">SÍ contar:</strong> Células que toquen los bordes <span class="text-emerald-400 font-bold">SUPERIOR</span> e <span class="text-emerald-400 font-bold">IZQUIERDO</span>.</li>
+                        <li><strong class="text-red-400">NO contar:</strong> Células que toquen los bordes <span class="text-red-400 font-bold">INFERIOR</span> y <span class="text-red-400 font-bold">DERECHO</span>.</li>
+                    </ul>
+                </div>
+
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <h3 class="font-bold text-cyan-300 mb-1">2. Tinción Vital con Azul de Metileno</h3>
+                    <div class="flex items-center gap-3 mt-2">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-4 h-4 rounded-full bg-[#f5e6ca] border border-slate-600 inline-block"></span>
+                            <span><strong>Vivas:</strong> Incoloras / Crema</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-4 h-4 rounded-full bg-blue-600 border border-slate-600 inline-block"></span>
+                            <span><strong>Muertas:</strong> Azul Intenso</span>
+                        </div>
+                    </div>
+                    <p class="mt-2 text-slate-400 text-[11px]">
+                        Las células viables eliminan enzimáticamente el colorante, permaneciendo claras. Las células muertas retienen la tinción.
+                    </p>
+                </div>
+
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <h3 class="font-bold text-cyan-300 mb-1">3. Cálculos de Concentración</h3>
+                    <p class="font-mono text-emerald-300 text-[11px] my-1">
+                        Concentración = (Células Totales / 16) × Factor Dilución × 10⁴ cél/mL
+                    </p>
+                    <p class="text-slate-400 text-[11px]">
+                        El factor \(10^4\) surge del volumen del cuadrante central (\(0.1\text{ mm}^3 = 10^{-4}\text{ mL}\)).
+                    </p>
+                </div>
+            </div>
+
+            <button id="btn-understood" class="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl transition-colors">
+                ¡Entendido, a Contar!
+            </button>
+        </div>
+    </div>
+
+    <!-- Application Logic Script -->
+    <script>
+        /**
+         * Neubauer Yeast Simulator Core Application
+         */
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // Canvas & Optical Context
+            const canvas = document.getElementById('microscope-canvas');
+            const ctx = canvas.getContext('2d');
+            const lensWrapper = document.getElementById('lens-wrapper');
+
+            // DOM UI Controls
+            const sliderFocus = document.getElementById('slider-focus');
+            const focusValDisplay = document.getElementById('focus-val');
+            const btnToggleMarkers = document.getElementById('toggle-markers');
+            const tagCountDisplay = document.getElementById('tag-count');
+            const btnClearTags = document.getElementById('btn-clear-tags');
+            const selectDifficulty = document.getElementById('select-difficulty');
+            const dilutionDisplay = document.getElementById('dilution-display');
+            const btnReset = document.getElementById('btn-reset');
+            const btnHelp = document.getElementById('btn-help');
+            const helpModal = document.getElementById('help-modal');
+            const btnCloseHelp = document.getElementById('btn-close-help');
+            const btnUnderstood = document.getElementById('btn-understood');
+            const btnFormulaToggle = document.getElementById('btn-formula-toggle');
+            const formulaBox = document.getElementById('formula-box');
+
+            // Form & Evaluation Elements
+            const evalForm = document.getElementById('eval-form');
+            const inputTotal = document.getElementById('input-total');
+            const inputViability = document.getElementById('input-viability');
+            const inputConcentration = document.getElementById('input-concentration');
+            const resultModal = document.getElementById('result-modal');
+            const resultTitle = document.getElementById('result-title');
+            const scoreBadge = document.getElementById('score-badge');
+            const resultDetails = document.getElementById('result-details');
+            const feedbackExplanation = document.getElementById('feedback-explanation');
+            const antiCheatHash = document.getElementById('anti-cheat-hash');
+            const btnCopyHash = document.getElementById('btn-copy-hash');
+
+            // Simulation State
+            let yeastCells = [];
+            let userMarkers = [];
+            let activeDilution = 10; // 1, 10, or 100
+            let allowMarkers = true;
+            let focusBlur = 0; // Derived from focus slider
+            let gridConfig = {
+                size: 0,
+                subDivs: 4,
+                startX: 0,
+                startY: 0,
+                cellSize: 0
+            };
+
+            // Ground Truth Counter Object
+            let actualCounts = {
+                validTotal: 0,
+                validLive: 0,
+                validDead: 0,
+                viabilityPct: 0,
+                concentration: 0
+            };
+
+            /**
+             * Resize canvas dynamically to match DPI and lens container size
+             */
+            function resizeCanvas() {
+                const rect = lensWrapper.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                ctx.scale(dpr, dpr);
+                
+                // Recalculate Grid Dimensions (0.75 ratio of viewport)
+                const gridPixelSize = rect.width * 0.72;
+                gridConfig.size = gridPixelSize;
+                gridConfig.startX = (rect.width - gridPixelSize) / 2;
+                gridConfig.startY = (rect.height - gridPixelSize) / 2;
+                gridConfig.cellSize = gridPixelSize / gridConfig.subDivs;
+
+                renderMicroscope();
+            }
+
+            /**
+             * Generates a new random population of yeast cells on the Neubauer grid
+             */
+            function generateSample() {
+                const difficulty = selectDifficulty.value;
+                userMarkers = [];
+                tagCountDisplay.textContent = '0';
+                resultModal.classList.add('hidden');
+
+                // Determine Dilution & Density based on difficulty
+                let cellCount = 25;
+                if (difficulty === 'easy') {
+                    cellCount = Math.floor(Math.random() * 10) + 15;
+                    activeDilution = 1;
+                } else if (difficulty === 'medium') {
+                    cellCount = Math.floor(Math.random() * 18) + 25;
+                    activeDilution = 10;
+                } else { // Hard
+                    cellCount = Math.floor(Math.random() * 25) + 40;
+                    const dilutions = [1, 10, 100];
+                    activeDilution = dilutions[Math.floor(Math.random() * dilutions.length)];
+                }
+
+                dilutionDisplay.textContent = `1:${activeDilution}`;
+
+                const rect = lensWrapper.getBoundingClientRect();
+                const viewportWidth = rect.width || 360;
+                const gridPixelSize = viewportWidth * 0.72;
+                const startX = (viewportWidth - gridPixelSize) / 2;
+                const startY = (viewportWidth - gridPixelSize) / 2;
+
+                yeastCells = [];
+                actualCounts = { validTotal: 0, validLive: 0, validDead: 0, viabilityPct: 0, concentration: 0 };
+
+                for (let i = 0; i < cellCount; i++) {
+                    // Random position in lens area
+                    const radiusRatio = Math.sqrt(Math.random()) * 0.42;
+                    const angle = Math.random() * Math.PI * 2;
+                    const cx = viewportWidth / 2 + radiusRatio * viewportWidth * Math.cos(angle);
+                    const cy = viewportWidth / 2 + radiusRatio * viewportWidth * Math.sin(angle);
+
+                    // Yeast Properties
+                    const radius = Math.random() * 2.5 + 6.5; // Cell size
+                    const isDead = (difficulty === 'easy') ? false : (Math.random() < 0.3); // 30% dead cells
+                    const isBudding = Math.random() < 0.25; // 25% chance of budding child cell
+                    const budAngle = Math.random() * Math.PI * 2;
+
+                    // Evaluate Neubauer Border Rule Inclusion
+                    const valid = checkInclusionRule(cx, cy, radius, startX, startY, gridPixelSize);
+
+                    if (valid) {
+                        actualCounts.validTotal++;
+                        if (isDead) actualCounts.validDead++;
+                        else actualCounts.validLive++;
+                    }
+
+                    yeastCells.push({
+                        x: cx,
+                        y: cy,
+                        r: radius,
+                        isDead: isDead,
+                        isBudding: isBudding,
+                        budAngle: budAngle,
+                        isValid: valid
+                    });
+                }
+
+                // Compute exact ground truths
+                actualCounts.viabilityPct = actualCounts.validTotal > 0 
+                    ? (actualCounts.validLive / actualCounts.validTotal) * 100 
+                    : 100;
+
+                // Neubauer Formula: (Cells / 16 sub-squares) * Dilution * 10,000
+                actualCounts.concentration = (actualCounts.validTotal) * activeDilution * 10000;
+
+                renderMicroscope();
+            }
+
+            /**
+             * Checks Neubauer Inclusion Rule:
+             * Inside square OR touching Top/Left borders -> TRUE
+             * Touching Bottom/Right borders -> FALSE
+             */
+            function checkInclusionRule(x, y, r, gridX, gridY, gridSize) {
+                const minX = gridX;
+                const maxX = gridX + gridSize;
+                const minY = gridY;
+                const maxY = gridY + gridSize;
+
+                // Check if completely outside grid outer boundary
+                if (x + r < minX || x - r > maxX || y + r < minY || y - r > maxY) {
+                    return false;
+                }
+
+                // Touches Right or Bottom border -> EXCLUDE
+                const touchesRight = (x + r >= maxX) && (x - r < maxX);
+                const touchesBottom = (y + r >= maxY) && (y - r < maxY);
+
+                if (touchesRight || touchesBottom) {
+                    return false;
+                }
+
+                // Inside or touches Top/Left -> INCLUDE
+                const insideX = (x >= minX && x <= maxX);
+                const insideY = (y >= minY && y <= maxY);
+
+                return insideX && insideY;
+            }
+
+            /**
+             * Primary Render Loop for Canvas Graphics
+             */
+            function renderMicroscope() {
+                const rect = lensWrapper.getBoundingClientRect();
+                const w = rect.width;
+                const h = rect.height;
+
+                if (!w || !h) return;
+
+                // Clear canvas
+                ctx.clearRect(0, 0, w, h);
+
+                // Apply Microscope Focus Blur filter
+                const focusValue = parseInt(sliderFocus.value);
+                const blurAmount = Math.abs(85 - focusValue) / 12; 
+                canvas.style.filter = `blur(${blurAmount}px)`;
+
+                // 1. Draw Field Background & Lighting
+                const bgGradient = ctx.createRadialGradient(w/2, h/2, 10, w/2, h/2, w/2);
+                bgGradient.addColorStop(0, '#e8f4f8');
+                bgGradient.addColorStop(0.7, '#c2dce4');
+                bgGradient.addColorStop(1, '#92b3be');
+                ctx.fillStyle = bgGradient;
+                ctx.fillRect(0, 0, w, h);
+
+                // 2. Draw Neubauer Central Grid Lines
+                drawNeubauerGrid(ctx, gridConfig);
+
+                // 3. Draw Yeast Cells
+                yeastCells.forEach(cell => drawYeastCell(ctx, cell));
+
+                // 4. Draw User Touch Markers
+                userMarkers.forEach((marker, index) => {
+                    ctx.beginPath();
+                    ctx.arc(marker.x, marker.y, 10, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#e11d48';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Inner Dot
+                    ctx.beginPath();
+                    ctx.arc(marker.x, marker.y, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = '#f43f5e';
+                    ctx.fill();
+
+                    // Marker number
+                    ctx.fillStyle = '#881337';
+                    ctx.font = 'bold 9px sans-serif';
+                    ctx.fillText(index + 1, marker.x + 8, marker.y - 6);
+                });
+            }
+
+            /**
+             * Renders Neubauer Standard Central Grid (16 Sub-squares with double border lines)
+             */
+            function drawNeubauerGrid(ctx, cfg) {
+                const { startX, startY, size, subDivs, cellSize } = cfg;
+
+                ctx.save();
+                
+                // Outer Thick Border
+                ctx.strokeStyle = '#2c5282';
+                ctx.lineWidth = 2.5;
+                ctx.strokeRect(startX, startY, size, size);
+
+                // Color code inclusion borders for teaching
+                // Top & Left = Green (Inclusive)
+                ctx.strokeStyle = '#16a34a';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(startX + size, startY);
+                ctx.lineTo(startX, startY);
+                ctx.lineTo(startX, startY + size);
+                ctx.stroke();
+
+                // Bottom & Right = Red (Exclusive)
+                ctx.strokeStyle = '#dc2626';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(startX + size, startY);
+                ctx.lineTo(startX + size, startY + size);
+                ctx.lineTo(startX, startY + size);
+                ctx.stroke();
+
+                // Internal Sub-grid lines (Double lines to represent triple boundary)
+                ctx.strokeStyle = '#4a5568';
+                ctx.lineWidth = 1;
+
+                for (let i = 1; i < subDivs; i++) {
+                    const pos = startX + i * cellSize;
+
+                    // Vertical lines
+                    ctx.beginPath();
+                    ctx.moveTo(pos - 1, startY);
+                    ctx.lineTo(pos - 1, startY + size);
+                    ctx.moveTo(pos + 1, startY);
+                    ctx.lineTo(pos + 1, startY + size);
+                    ctx.stroke();
+
+                    // Horizontal lines
+                    const posH = startY + i * cellSize;
+                    ctx.beginPath();
+                    ctx.moveTo(startX, posH - 1);
+                    ctx.lineTo(startX + size, posH - 1);
+                    ctx.moveTo(startX, posH + 1);
+                    ctx.lineTo(startX + size, posH + 1);
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+
+            /**
+             * Draws realistic yeast cell (Saccharomyces cerevisiae) with lipid membrane, vacuole and optional budding
+             */
+            function drawYeastCell(ctx, cell) {
+                ctx.save();
+                ctx.translate(cell.x, cell.y);
+
+                // Main Cell Body Path
+                ctx.beginPath();
+                ctx.ellipse(0, 0, cell.r, cell.r * 0.88, Math.PI / 4, 0, Math.PI * 2);
+
+                if (cell.isDead) {
+                    // Dead Yeast: Methylene Blue Stained (Dark Blue with shadow)
+                    const grad = ctx.createRadialGradient(-cell.r*0.3, -cell.r*0.3, 1, 0, 0, cell.r);
+                    grad.addColorStop(0, '#3b82f6');
+                    grad.addColorStop(0.7, '#1d4ed8');
+                    grad.addColorStop(1, '#1e3a8a');
+                    ctx.fillStyle = grad;
+                    ctx.strokeStyle = '#172554';
+                } else {
+                    // Live Yeast: Refractive Cream/Translucent
+                    const grad = ctx.createRadialGradient(-cell.r*0.3, -cell.r*0.3, 1, 0, 0, cell.r);
+                    grad.addColorStop(0, '#ffffff');
+                    grad.addColorStop(0.5, '#fef3c7');
+                    grad.addColorStop(1, '#d97706');
+                    ctx.fillStyle = grad;
+                    ctx.strokeStyle = '#b45309';
+                }
+
+                ctx.lineWidth = 1.2;
+                ctx.fill();
+                ctx.stroke();
+
+                // Inner Refractive Vacuole / Organelle detail
+                if (!cell.isDead) {
+                    ctx.beginPath();
+                    ctx.arc(-cell.r*0.2, -cell.r*0.2, cell.r * 0.3, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                    ctx.fill();
+                }
+
+                // Optional Daughter Budding Cell
+                if (cell.isBudding) {
+                    const budR = cell.r * 0.55;
+                    const bx = Math.cos(cell.budAngle) * (cell.r + budR * 0.7);
+                    const by = Math.sin(cell.budAngle) * (cell.r + budR * 0.7);
+
+                    ctx.beginPath();
+                    ctx.arc(bx, by, budR, 0, Math.PI * 2);
+                    ctx.fillStyle = cell.isDead ? '#2563eb' : '#fef3c7';
+                    ctx.strokeStyle = cell.isDead ? '#172554' : '#b45309';
+                    ctx.lineWidth = 1;
+                    ctx.fill();
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+
+            /**
+             * User Interaction: Tap/Click Lens to add manual counter markers
+             */
+            lensWrapper.addEventListener('pointerdown', (e) => {
+                if (!allowMarkers) return;
+
+                const rect = lensWrapper.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+
+                // Check if user clicked near an existing marker to remove it
+                const existingIndex = userMarkers.findIndex(m => {
+                    const dist = Math.hypot(m.x - clickX, m.y - clickY);
+                    return dist < 15;
+                });
+
+                if (existingIndex >= 0) {
+                    userMarkers.splice(existingIndex, 1);
+                } else {
+                    userMarkers.push({ x: clickX, y: clickY });
+                }
+
+                tagCountDisplay.textContent = userMarkers.length;
+                renderMicroscope();
+            });
+
+            // Adjust Focus Slider Event
+            sliderFocus.addEventListener('input', (e) => {
+                focusValDisplay.textContent = `${e.target.value}%`;
+                renderMicroscope();
+            });
+
+            // Toggle Marking Feature
+            btnToggleMarkers.addEventListener('click', () => {
+                allowMarkers = !allowMarkers;
+                btnToggleMarkers.textContent = allowMarkers ? 'SÍ (Activo)' : 'NO (Inactivo)';
+                btnToggleMarkers.className = allowMarkers 
+                    ? 'px-2.5 py-1 bg-cyan-600 text-white font-semibold rounded text-[11px] transition-colors'
+                    : 'px-2.5 py-1 bg-slate-800 text-slate-400 font-semibold rounded text-[11px] transition-colors';
+            });
+
+            // Clear Markers
+            btnClearTags.addEventListener('click', () => {
+                userMarkers = [];
+                tagCountDisplay.textContent = '0';
+                renderMicroscope();
+            });
+
+            // Toggle Formula Helper
+            btnFormulaToggle.addEventListener('click', () => {
+                formulaBox.classList.toggle('hidden');
+            });
+
+            // Help Modal Handlers
+            btnHelp.addEventListener('click', () => helpModal.classList.remove('hidden'));
+            btnCloseHelp.addEventListener('click', () => helpModal.classList.add('hidden'));
+            btnUnderstood.addEventListener('click', () => helpModal.classList.add('hidden'));
+
+            // Reset / New Sample Trigger
+            btnReset.addEventListener('click', () => {
+                generateSample();
+            });
+
+            selectDifficulty.addEventListener('change', () => {
+                generateSample();
+            });
+
+            /**
+             * Form Verification & Evaluation Logic
+             */
+            evalForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+
+                const userTotal = parseInt(inputTotal.value);
+                const userViability = parseFloat(inputViability.value);
+                // Parse potential scientific notation input (e.g. 3.2e6)
+                const userConc = parseFloat(inputConcentration.value.replace(',', '.'));
+
+                if (isNaN(userTotal) || isNaN(userViability) || isNaN(userConc)) {
+                    alert('Por favor, ingresa valores numéricos válidos en todos los campos.');
+                    return;
+                }
+
+                // Compute Percent Errors
+                const errTotal = Math.abs(userTotal - actualCounts.validTotal);
+                const errViability = Math.abs(userViability - actualCounts.viabilityPct);
+                const errConcPct = Math.abs((userConc - actualCounts.concentration) / actualCounts.concentration) * 100;
+
+                // Grading Criteria: Tolerance <= 5% Error for Excellence
+                const isTotalCorrect = errTotal <= 1; // Allows +/- 1 cell margin
+                const isViabilityCorrect = errViability <= 5.0; // +/- 5% margin
+                const isConcCorrect = errConcPct <= 10.0; // +/- 10% math margin
+
+                let scoreText = '';
+                let badgeClass = '';
+                let isExcellent = isTotalCorrect && isViabilityCorrect && isConcCorrect;
+
+                if (isExcellent) {
+                    scoreText = '100% - Excelente';
+                    badgeClass = 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+                    resultTitle.innerHTML = `<i class="fa-solid fa-award text-emerald-400 text-lg"></i> <span class="text-emerald-400">¡Conteo y Cálculos Perfectos!</span>`;
+                } else if (isTotalCorrect || isConcCorrect) {
+                    scoreText = 'Aceptable';
+                    badgeClass = 'bg-amber-500/20 text-amber-300 border border-amber-500/30';
+                    resultTitle.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-400 text-lg"></i> <span class="text-amber-400">Revisión Requerida</span>`;
+                } else {
+                    scoreText = 'Necesita Mejorar';
+                    badgeClass = 'bg-rose-500/20 text-rose-300 border border-rose-500/30';
+                    resultTitle.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-400 text-lg"></i> <span class="text-rose-400">Inexacto</span>`;
+                }
+
+                scoreBadge.textContent = scoreText;
+                scoreBadge.className = `px-2.5 py-0.5 rounded-full text-xs font-bold ${badgeClass}`;
+
+                // Render Detailed Comparison Table
+                resultDetails.innerHTML = `
+                    <div class="grid grid-cols-3 gap-2 pb-1 text-slate-400 font-sans text-[11px] border-b border-slate-800">
+                        <span>Parámetro</span>
+                        <span>Ingresado</span>
+                        <span>Real Real</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 items-center ${isTotalCorrect ? 'text-emerald-400' : 'text-rose-400'}">
+                        <span class="font-sans text-slate-300">Células Totales:</span>
+                        <span>${userTotal}</span>
+                        <span class="text-slate-200">${actualCounts.validTotal}</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 items-center ${isViabilityCorrect ? 'text-emerald-400' : 'text-rose-400'}">
+                        <span class="font-sans text-slate-300">Viabilidad (%):</span>
+                        <span>${userViability.toFixed(1)}%</span>
+                        <span class="text-slate-200">${actualCounts.viabilityPct.toFixed(1)}%</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 items-center ${isConcCorrect ? 'text-emerald-400' : 'text-rose-400'}">
+                        <span class="font-sans text-slate-300">Conc. (cél/mL):</span>
+                        <span>${userConc.toExponential(2)}</span>
+                        <span class="text-slate-200">${actualCounts.concentration.toExponential(2)}</span>
+                    </div>
+                `;
+
+                // Pedagogical Explanatory Feedback
+                let feedback = `<strong>Desglose de Muestra:</strong> Encontradas <strong>${actualCounts.validTotal}</strong> células dentro de la regla de bordes (Vivas: ${actualCounts.validLive}, Muertas: ${actualCounts.validDead}). `;
+                
+                if (!isTotalCorrect) {
+                    feedback += `Recuerda aplicar la regla de los bordes: se cuentan las células en el borde <span class="text-emerald-400">superior e izquierdo</span>, pero NO las del <span class="text-red-400">inferior o derecho</span>. `;
+                }
+                if (!isConcCorrect) {
+                    feedback += `Comprueba el factor de dilución (1:${activeDilution}). La fórmula es: (${actualCounts.validTotal} / 16) × ${activeDilution} × 10⁴. `;
+                }
+
+                feedbackExplanation.innerHTML = feedback;
+
+                // Anti-Cheat Hash Code Generation
+                const hashSeed = `${userTotal}-${actualCounts.validTotal}-${userConc}-${Date.now().toString().slice(-4)}`;
+                const hash = btoa(hashSeed).substring(0, 10).toUpperCase();
+                antiCheatHash.textContent = hash;
+
+                resultModal.classList.remove('hidden');
+                resultModal.scrollIntoView({ behavior: 'smooth' });
+            });
+
+            // Copy Verification Hash Code
+            btnCopyHash.addEventListener('click', () => {
+                const text = antiCheatHash.textContent;
+                navigator.clipboard.writeText(text).then(() => {
+                    btnCopyHash.innerHTML = `<i class="fa-solid fa-check text-emerald-400"></i> Copiado`;
+                    setTimeout(() => {
+                        btnCopyHash.innerHTML = `<i class="fa-solid fa-copy"></i> Copiar`;
+                    }, 2000);
+                });
+            });
+
+            // Window resize handler
+            window.addEventListener('resize', resizeCanvas);
+
+            // Initial setup
+            resizeCanvas();
+            generateSample();
+        });
+    </script>
+</body>
+</html>
